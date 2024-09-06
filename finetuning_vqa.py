@@ -7,7 +7,6 @@ import wandb
 import pandas as pd
 
 from transformers import BlipProcessor, BlipForQuestionAnswering
-from datasets import load_dataset
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torch.nn.utils import clip_grad_norm_
@@ -26,7 +25,7 @@ class Config:
     grad_clip: int = 1
     scheduler_gamma: int = 0.9
     batch_size: int = 32
-    num_epochs: int = 100
+    num_epochs: int = 20
     patience: int = 10
     seed: int = 1
 
@@ -34,6 +33,7 @@ class Config:
 class VQADataset(Dataset):
     def __init__(self, csv_dataset_path, images_path, processor, mode="train"):
         self.csv_dataset_path = pd.read_csv(csv_dataset_path)
+        self.csv_dataset_path = self.csv_dataset_path[pd.notnull(self.csv_dataset_path['answer'])]
         self.images_path = images_path
         self.processor = processor
         self.mode = mode
@@ -46,9 +46,9 @@ class VQADataset(Dataset):
     def __getitem__(self, idx):
         # get image + text
         idx = idx if self.mode == "train" else idx + int(self.total_len * self.fraction)
-        question = self.csv_dataset_path.loc[idx]["question"]
-        answer = self.csv_dataset_path.loc[idx]["answer"]
-        image_id_str = str(self.csv_dataset_path.loc[idx]["image_id"])
+        question = self.csv_dataset_path.iloc[idx]["question"]
+        answer = self.csv_dataset_path.iloc[idx]["answer"]
+        image_id_str = str(self.csv_dataset_path.iloc[idx]["image_id"])
         converted_image_id = ["0"] * 12
         converted_image_id[-len(image_id_str):] = image_id_str
         image_path = f"{self.images_path}/COCO_val2014_{''.join(converted_image_id)}.jpg"
@@ -81,8 +81,8 @@ def train(config: Config):
     # valid_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[90%:]")
     # print("Training sets: {} - Validating set: {}".format(len(training_dataset), len(valid_dataset)))
 
-    train_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor)
-    valid_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor)
+    train_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor, mode='train')
+    valid_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor, mode='val')
 
     batch_size = config.batch_size
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
@@ -113,9 +113,6 @@ def train(config: Config):
                             # attention_mask=attention_masked,
                             labels=labels)
                 
-            print(f'labels - {labels}')
-            print(f'output - {outputs}')
-            return
             loss = outputs.loss
             train_loss += loss.item()
             optimizer.zero_grad()
@@ -144,7 +141,9 @@ def train(config: Config):
 
         scheduler.step()
         if eval_loss < min_eval_loss:
-            model.save_pretrained("vqa-saved-model", from_pt=True) 
+            torch.save({"model_state_dict": model.state_dict(), 
+                        "optimizer_state_dict": optimizer.state_dict(), 
+                        "loss": eval_loss}, "model_vqa.pt")
             print("Saved model checkpoint")
             min_eval_loss = eval_loss
             early_stopping_hook = 0

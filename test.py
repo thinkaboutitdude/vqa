@@ -70,3 +70,12 @@
 # print(])
 # a.pop('pixel_values')
 # print(a)
+
+
+import pandas as pd
+
+data = pd.read_csv('./Train/Train_Qs.csv')
+print(len(data))
+print(data.loc[36136])
+new_data = pd.read_csv('./Train/Train_Qs.csv')[data['answer'] != 'none'].dropna()
+print(len(new_data))
