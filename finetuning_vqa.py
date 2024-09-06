@@ -49,9 +49,9 @@ class VQADataset(Dataset):
         question = self.csv_dataset_path.loc[idx]["question"]
         answer = self.csv_dataset_path.loc[idx]["answer"]
         image_id_str = str(self.csv_dataset_path.loc[idx]["image_id"])
-        converted_image_id = "000000000000"
+        converted_image_id = ["0"] * 12
         converted_image_id[-len(image_id_str):] = image_id_str
-        image_path = f"{image_path}/COCO_val2014_{converted_image_id}.jpg"
+        image_path = f"{self.images_path}/COCO_val2014_{converted_image_id}.jpg"
         image = Image.open(image_path).convert("RGB")
         text = question
         
@@ -77,9 +77,9 @@ def train(config: Config):
     torch.cuda.empty_cache()
     set_random_seed(config.seed)
 
-    training_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[:90%]")
-    valid_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[90%:]")
-    print("Training sets: {} - Validating set: {}".format(len(training_dataset), len(valid_dataset)))
+    # training_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[:90%]")
+    # valid_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[90%:]")
+    # print("Training sets: {} - Validating set: {}".format(len(training_dataset), len(valid_dataset)))
 
     train_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor)
     valid_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor)
