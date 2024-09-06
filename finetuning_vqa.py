@@ -24,7 +24,7 @@ class Config:
     lr: float = 4e-5
     grad_clip: int = 1
     scheduler_gamma: int = 0.9
-    batch_size: int = 32
+    batch_size: int = 4
     num_epochs: int = 20
     patience: int = 10
     seed: int = 1
@@ -57,7 +57,7 @@ class VQADataset(Dataset):
         
         encoding = self.processor(image, text, padding="max_length", truncation=True, return_tensors="pt")
         labels = self.processor.tokenizer.encode(
-            answer, max_length=16, pad_to_max_length=True, return_tensors="pt"
+            answer, max_length=8, pad_to_max_length=True, return_tensors="pt"
         )
         encoding["labels"] = labels
         # remove batch dimension
