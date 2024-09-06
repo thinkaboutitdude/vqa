@@ -25,7 +25,7 @@ class Config:
     lr: float = 4e-5
     grad_clip: int = 1
     scheduler_gamma: int = 0.9
-    batch_size: int = 32
+    batch_size: int = 2
     num_epochs: int = 100
     patience: int = 10
     seed: int = 1
@@ -113,6 +113,9 @@ def train(config: Config):
                             # attention_mask=attention_masked,
                             labels=labels)
                 
+            print(f'labels - {labels}')
+            print(f'output - {outputs}')
+            return
             loss = outputs.loss
             train_loss += loss.item()
             optimizer.zero_grad()
