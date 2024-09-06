@@ -25,7 +25,7 @@ class Config:
     lr: float = 4e-5
     grad_clip: int = 1
     scheduler_gamma: int = 0.9
-    batch_size: int = 2
+    batch_size: int = 32
     num_epochs: int = 100
     patience: int = 10
     seed: int = 1
@@ -51,7 +51,7 @@ class VQADataset(Dataset):
         image_id_str = str(self.csv_dataset_path.loc[idx]["image_id"])
         converted_image_id = ["0"] * 12
         converted_image_id[-len(image_id_str):] = image_id_str
-        image_path = f"{self.images_path}/COCO_val2014_{converted_image_id}.jpg"
+        image_path = f"{self.images_path}/COCO_val2014_{''.join(converted_image_id)}.jpg"
         image = Image.open(image_path).convert("RGB")
         text = question
         
@@ -98,7 +98,7 @@ def train(config: Config):
     early_stopping_hook = 0
     accuracy = 0
 
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs)):
         train_loss = 0
         model.train()
         for idx, batch in zip(tqdm(range(len(train_dataloader)), desc="Training batch: ..."), train_dataloader):
