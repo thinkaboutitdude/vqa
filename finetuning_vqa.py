@@ -44,7 +44,7 @@ class VQADataset(Dataset):
         if self.mode == "train":
             return int(self.fraction * self.total_len)
         else:
-            return int(((1 - self.fraction) // 2) * self.total_len)
+            return int(((1 - self.fraction) / 2) * self.total_len)
 
     def __getitem__(self, idx):
         # get image + text
