@@ -16,7 +16,7 @@ from set_seed import set_random_seed
 
 @dataclass
 class Config:
-    wandb_project: str = "vlip_vqa_test"
+    wandb_project: str = "vlip_vqa_test_2"
     model: str = "Salesforce/blip-vqa-base"
     processor: str = "Salesforce/blip-vqa-base"
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
