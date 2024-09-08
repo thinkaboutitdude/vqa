@@ -16,7 +16,7 @@ from set_seed import set_random_seed
 
 @dataclass
 class Config:
-    wandb_project: str = "vlip_vqa"
+    wandb_project: str = "vlip_vqa_test"
     model: str = "Salesforce/blip-vqa-base"
     processor: str = "Salesforce/blip-vqa-base"
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,12 +40,18 @@ class VQADataset(Dataset):
 
     def __len__(self):
         self.total_len = len(self.csv_dataset_path)
-        self.fraction = 0.8
-        return int(self.fraction * self.total_len) if self.mode == "train" else int((1 - self.fraction) * self.total_len)
+        self.fraction = 0.6
+        if self.mode == "train":
+            return int(self.fraction * self.total_len)
+        else:
+            return int(((1 - self.fraction) // 2) * self.total_len)
 
     def __getitem__(self, idx):
         # get image + text
-        idx = idx if self.mode == "train" else idx + int(self.total_len * self.fraction)
+        if self.mode == "val":
+            idx = idx + int(self.total_len * self.fraction)
+        elif self.mode == "test":
+            idx = idx + int(self.total_len * self.fraction + (1 - self.fraction) // 2)
         question = self.csv_dataset_path.iloc[idx]["question"]
         answer = self.csv_dataset_path.iloc[idx]["answer"]
         image_id_str = str(self.csv_dataset_path.iloc[idx]["image_id"])
@@ -77,17 +83,14 @@ def train(config: Config):
     torch.cuda.empty_cache()
     set_random_seed(config.seed)
 
-    # training_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[:90%]")
-    # valid_dataset = load_dataset("csv", data_files="Data/train.jsonl", split="train[90%:]")
-    # print("Training sets: {} - Validating set: {}".format(len(training_dataset), len(valid_dataset)))
 
-    train_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor, mode='train')
-    valid_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor, mode='val')
+    train_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor, mode="train")
+    valid_dataset = VQADataset(csv_dataset_path="./Train/Train_Qs.csv", images_path="./Train/images", processor=processor, mode="val")
 
     batch_size = config.batch_size
+
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
     valid_dataloader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
-
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=config.scheduler_gamma)
@@ -96,7 +99,6 @@ def train(config: Config):
     patience = config.patience
     min_eval_loss = float("inf")
     early_stopping_hook = 0
-    accuracy = 0
 
     for epoch in tqdm(range(num_epochs)):
         train_loss = 0
