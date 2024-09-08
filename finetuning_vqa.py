@@ -125,21 +125,22 @@ def train(config: Config):
         
         model.eval()
         eval_loss = 0
-        for idx, batch in zip(tqdm(range(len(valid_dataloader)), desc="Validating batch: ..."), valid_dataloader):
-            input_ids = batch.pop("input_ids").to(device)
-            pixel_values = batch.pop("pixel_values").to(device)
-            attention_masked = batch.pop("attention_mask").to(device)
-            labels = batch.pop("labels").to(device)
+        with torch.no_grad():
+            for idx, batch in zip(tqdm(range(len(valid_dataloader)), desc="Validating batch: ..."), valid_dataloader):
+                input_ids = batch.pop("input_ids").to(device)
+                pixel_values = batch.pop("pixel_values").to(device)
+                attention_masked = batch.pop("attention_mask").to(device)
+                labels = batch.pop("labels").to(device)
 
-            with torch.amp.autocast(device_type=config.device, dtype=torch.float16):
-                outputs = model(input_ids=input_ids,
-                            pixel_values=pixel_values,
-                            attention_mask=attention_masked,
-                            labels=labels)
-            
-            loss = outputs.loss
-            eval_loss += loss.item()
-        wandb.log({"eval_loss": eval_loss})
+                with torch.amp.autocast(device_type=config.device, dtype=torch.float16):
+                    outputs = model(input_ids=input_ids,
+                                pixel_values=pixel_values,
+                                attention_mask=attention_masked,
+                                labels=labels)
+                
+                loss = outputs.loss
+                eval_loss += loss.item()
+            wandb.log({"eval_loss": eval_loss})
 
         scheduler.step()
         if eval_loss < min_eval_loss:
