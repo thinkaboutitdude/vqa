@@ -147,6 +147,7 @@ def train(config: Config):
             torch.save({"model_state_dict": model.state_dict(), 
                         "optimizer_state_dict": optimizer.state_dict(), 
                         "loss": eval_loss}, "model_vqa.pt")
+            model.save_pretrained('./vqa_ckpt')
             print("Saved model checkpoint")
             min_eval_loss = eval_loss
             early_stopping_hook = 0
