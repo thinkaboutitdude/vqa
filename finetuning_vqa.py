@@ -103,7 +103,7 @@ def train(config: Config):
     for epoch in tqdm(range(num_epochs)):
         train_loss = 0
         model.train()
-        for idx, batch in zip(tqdm(range(len(train_dataloader)), desc="Training batch: ..."), train_dataloader):
+        for idx, batch in zip(range(len(train_dataloader)), train_dataloader):
             input_ids = batch.pop("input_ids").to(device)
             pixel_values = batch.pop("pixel_values").to(device)
             attention_masked = batch.pop("attention_mask").to(device)
@@ -126,7 +126,7 @@ def train(config: Config):
         model.eval()
         eval_loss = 0
         with torch.no_grad():
-            for idx, batch in zip(tqdm(range(len(valid_dataloader)), desc="Validating batch: ..."), valid_dataloader):
+            for idx, batch in zip(range(len(valid_dataloader)), valid_dataloader):
                 input_ids = batch.pop("input_ids").to(device)
                 pixel_values = batch.pop("pixel_values").to(device)
                 attention_masked = batch.pop("attention_mask").to(device)
