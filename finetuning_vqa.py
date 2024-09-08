@@ -25,8 +25,8 @@ class Config:
     grad_clip: int = 1
     scheduler_gamma: int = 0.9
     batch_size: int = 4
-    num_epochs: int = 20
-    patience: int = 10
+    num_epochs: int = 10
+    patience: int = 5
     seed: int = 1
 
 
