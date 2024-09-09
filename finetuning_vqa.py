@@ -10,6 +10,7 @@ from transformers import BlipProcessor, BlipForQuestionAnswering
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torch.nn.utils import clip_grad_norm_
+from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
 from dataclasses import dataclass
 from set_seed import set_random_seed
@@ -20,12 +21,11 @@ class Config:
     model: str = "Salesforce/blip-vqa-base"
     processor: str = "Salesforce/blip-vqa-base"
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
-    train_seed: int = 1
     lr: float = 4e-5
     grad_clip: int = 1
     scheduler_gamma: int = 0.9
-    batch_size: int = 4
-    num_epochs: int = 10
+    batch_size: int = 32
+    num_epochs: int = 200
     patience: int = 5
     seed: int = 1
 
@@ -74,7 +74,17 @@ class VQADataset(Dataset):
 def train(config: Config):
     wandb.init(project=config.wandb_project)
 
-    model = BlipForQuestionAnswering.from_pretrained(config.model)
+    model = BlipForQuestionAnswering.from_pretrained(config.model, load_in_8bit=True)
+    lora_config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        lora_dropout=0.05,
+        bias="none",
+        target_modules=["query", "key"]
+    )
+
+    model = get_peft_model(model, lora_config)
+     
     processor = BlipProcessor.from_pretrained(config.processor)
 
     device = config.device
